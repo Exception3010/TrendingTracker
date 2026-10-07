@@ -12,11 +12,12 @@ repositories page once per day, stores repository metadata in a database, and ex
 
 ## Tech Stack
 
-* Python 3.8+
-* Django 4.x
+* Python 3.10+
+* Django 5.2
 * Django REST Framework
 * Requests
 * BeautifulSoup4
+* python-dotenv (loads `.env`)
 * (Optional) Celery & Redis for task scheduling
 
 ## Installation
@@ -24,8 +25,8 @@ repositories page once per day, stores repository metadata in a database, and ex
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<your-username>/github-trending-tracker.git
-   cd github-trending-tracker
+   git clone https://github.com/Exception3010/TrendingTracker.git
+   cd TrendingTracker
    ```
 
 2. **Create & activate a virtual environment**
@@ -43,7 +44,20 @@ repositories page once per day, stores repository metadata in a database, and ex
 
 4. **Configure settings**
 
-   * Copy `.env.example` to `.env` and adjust any environment variables as needed.
+   Copy `.env.example` to `.env` and fill in the values:
+
+   ```bash
+   cp .env.example .env    # on Windows: copy .env.example .env
+   ```
+
+   `.env` is git-ignored and is loaded automatically by `trending_tracker/settings.py`
+   (via python-dotenv). Real environment variables take precedence over the file.
+
+   | Variable | Default | Notes |
+   | --- | --- | --- |
+   | `DJANGO_SECRET_KEY` | dev-only fallback while `DJANGO_DEBUG` is true | **Required** when `DJANGO_DEBUG` is false. Generate one with `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
+   | `DJANGO_DEBUG` | `True` | Set to `False` in production |
+   | `DJANGO_ALLOWED_HOSTS` | empty | Comma-separated hostnames, e.g. `example.com,www.example.com`. Required when `DJANGO_DEBUG` is false |
 
 5. **Run migrations**
 
@@ -118,10 +132,10 @@ schtasks /Create /SC DAILY /ST 00:00 /TN "ScrapeTrending" /TR "C:\path\to\venv\S
 
 #### Celery Beat (Optional)
 
-1. Install Celery & Redis:
+1. Install the Redis client (Celery itself is already in `requirements.txt`):
 
    ```bash
-   pip install celery redis
+   pip install redis
    ```
 2. Create `trending_tracker/celery.py` (already included).
 3. Ensure `__init__.py` loads Celery app.

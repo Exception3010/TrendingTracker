@@ -10,22 +10,54 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load variables from a local .env file (see .env.example). Real environment
+# variables always take precedence over values from the file.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+&pc&rhy5%3d7vq7a_*eul%!bltga06!5(v$=jl*7)c(oa8ft^'
+def _env_bool(name, default):
+    """Read a boolean from the environment ("1", "true", "yes", "on" are truthy)."""
+    value = os.environ.get(name)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Defaults to True for local development; set DJANGO_DEBUG=False in production.
+DEBUG = _env_bool('DJANGO_DEBUG', True)
 
-ALLOWED_HOSTS = []
+# SECURITY WARNING: keep the secret key used in production secret!
+# Set DJANGO_SECRET_KEY in the environment (or in .env). The built-in fallback is
+# only used while DEBUG is on; with DEBUG off a real key is mandatory.
+_DEV_ONLY_SECRET_KEY = 'django-insecure-dev-only-fallback-do-not-use-in-production'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or (_DEV_ONLY_SECRET_KEY if DEBUG else '')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        'DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false. '
+        'See .env.example for the expected variables.'
+    )
+
+# Comma-separated list, e.g. DJANGO_ALLOWED_HOSTS=example.com,www.example.com
+# Empty (the default) is fine for local development: with DEBUG on, Django
+# accepts localhost, 127.0.0.1 and [::1] automatically.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
+    if host.strip()
+]
 
 
 # Application definition
